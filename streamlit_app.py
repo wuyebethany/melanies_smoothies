@@ -2,7 +2,6 @@
 import streamlit as st
 from snowflake.snowpark.functions import col
 from snowflake.snowpark.function import when_matched
-from snowflake.snowpark.context import get_active_session
 
 # Write directly to the app
 og_dataset = session.table("smoothies.public.orders")
@@ -17,7 +16,8 @@ st.write(
   **Orders that need to be filled**
   """
 )
-session = get_active_session()
+cnx = st.connection("snowflake")
+session = cnx.session()
 my_dataframe = session.table("smoothies.public.orders").filter(col("ORDER_FILLED") == False).to_pandas()
 
 if not my_dataframe.empty:
