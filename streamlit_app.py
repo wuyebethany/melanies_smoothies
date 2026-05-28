@@ -1,23 +1,13 @@
-# Import python packages
 import streamlit as st
-from snowflake.snowpark.functions import col
-from snowflake.snowpark.function import when_matched
+from snowflake.snowpark.functions import col, when_matched  # ← fixed import, plural
 from snowflake.snowpark.context import get_active_session
+import requests
 
-# Write directly to the app
-og_dataset = session.table("smoothies.public.orders")
-    edited_dataset = session.create_dataframe(editable_df)
-    og_dataset.merge(edited_dataset
-                     , (og_dataset['ORDER_UID'] == edited_dataset['ORDER_UID'])
-                     , [when_matched().update({'ORDER_FILLED': edited_dataset['ORDER_FILLED']})]
-                    )
-st.title(f":cup_with_straw: Pending Smoothie Orders! :cup_with_straw:")
-st.write(
-  """
-  **Orders that need to be filled**
-  """
-)
-session = get_active_session()
+session = get_active_session()  # ← define session first
+
+st.title(":cup_with_straw: Pending Smoothie Orders! :cup_with_straw:")
+st.write("**Orders that need to be filled**")
+
 my_dataframe = session.table("smoothies.public.orders").filter(col("ORDER_FILLED") == False).to_pandas()
 
 if not my_dataframe.empty:
@@ -28,23 +18,19 @@ if not my_dataframe.empty:
         },
         disabled=["INGREDIENTS", "NAME_ON_ORDER"],
     )
-
     if st.button("Submit"):
-        for _, row in editable_df.iterrows():
-            if row["ORDER_FILLED"]:
-                session.sql(
-                    f"UPDATE smoothies.public.orders SET order_filled = TRUE WHERE name_on_order = '{row['NAME_ON_ORDER']}'"
-                ).collect()
+        og_dataset = session.table("smoothies.public.orders")
+        edited_dataset = session.create_dataframe(editable_df)
+        og_dataset.merge(
+            edited_dataset,
+            og_dataset['ORDER_UID'] == edited_dataset['ORDER_UID'],
+            [when_matched().update({'ORDER_FILLED': edited_dataset['ORDER_FILLED']})]
+        )
         st.success("Orders updated!", icon="✅")
         st.rerun()
 else:
     st.write("No pending orders.")
 
-
-
-
-
-#New section to display smoothiefroot nutrition information
-import requests  
-smoothiefroot_response = requests.get("[https://my.smoothiefroot.com/api/fruit/watermelon](https://my.smoothiefroot.com/api/fruit/watermelon)")  
-st.text(smoothiefroot_response)
+# Smoothiefroot nutrition info
+smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/watermelon")
+st.text(smoothiefroot_response.json())  # ← use .json() to display actual data
